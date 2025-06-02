@@ -238,29 +238,26 @@
 
       const endTime = getEndTime(time);
 
-      fetch("https://script.google.com/macros/s/AKfycbz6AwuIj_iHudoySeKQjXtQjP4pmREju3wV9vKnRxu9o7mjzqMEA2FdzFM9cD9vmImJ/exec", {
+      fetch("https://threeecho.app.n8n.cloud/webhook/calendar-booking", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           name,
           email,
-          title: "3echo Strategy Call",
           date,
           time,
-          endTime
+          endTime,
+          title: "3echo Strategy Call"
         })
       })
       .then(res => res.json())
-      .then(res => {
-        if (res.status === "success") {
-          alert("✅ Booking confirmed and added to calendar!");
-        } else {
-          alert("Something went wrong.");
-        }
+      .then(data => {
+        alert("✅ Booking request sent successfully!");
       })
       .catch(err => {
-        console.error(err);
-        alert("Error submitting booking.");
+        alert("❌ Failed to send booking: " + err.message);
       });
     }
 
