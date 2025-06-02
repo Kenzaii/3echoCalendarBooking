@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>3echo – Book a Strategy Call</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      background: #f9fafe;
+      padding: 40px 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      display: flex;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+      width: 90%;
+      max-width: 960px;
+      overflow: hidden;
+    }
+
+    .left {
+      flex: 1;
+      background: #f5f7fb;
+      padding: 40px;
+      border-right: 1px solid #eee;
+    }
+
+    .left h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .left h2 {
+      font-size: 26px;
+      font-weight: 600;
+      margin: 0 0 12px;
+    }
+
+    .left p {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #444;
+    }
+
+    .right {
+      flex: 2;
+      padding: 40px;
+    }
+
+    .calendar-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+
+    .calendar-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      align-items: flex-start;
+      margin-bottom: 32px;
+    }
+
+    .flatpickr-calendar.inline {
+      font-size: 16px;
+      padding: 16px;
+    }
+
+    .flatpickr-day {
+      width: 42px;
+      height: 42px;
+      line-height: 42px;
+      font-weight: 500;
+    }
+
+    .flatpickr-months .flatpickr-month {
+      font-size: 18px;
+    }
+
+    .slots {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 480px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    .slot {
+      border: 1px solid #d6e0f0;
+      border-radius: 999px;
+      padding: 12px;
+      text-align: center;
+      font-weight: 500;
+      color: #2643e9;
+      background: white;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    .slot:hover {
+      background: #edf2ff;
+    }
+
+    .slot.selected {
+      background: #2643e9;
+      color: white;
+    }
+
+    .form-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    input[type="text"],
+    input[type="email"] {
+      width: 100%;
+      padding: 12px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    button {
+      margin-top: 8px;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      background: #2643e9;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    button:hover {
+      background: #1f36c0;
+    }
+
+    @media (max-width: 768px) {
+      .container { flex-direction: column; }
+      .left, .right { border: none; padding: 24px; }
+      .calendar-section { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="left">
+      <h1>3echo Agency</h1>
+      <h2>30 Minute Meeting</h2>
+      <p>📅 Duration: 30 min<br>💻 Google Meet link will be shared after confirmation.</p>
+    </div>
+
+    <div class="right">
+      <div class="calendar-title">Select a Date & Time</div>
+      <div class="calendar-section">
+        <div class="date-picker">
+          <div id="calendar"></div>
+        </div>
+
+        <div class="slots" id="slotList"></div>
+      </div>
+
+      <div class="form-section">
+        <input type="text" id="nameInput" placeholder="Your Name">
+        <input type="email" id="emailInput" placeholder="Your Email">
+        <button onclick="submitBooking()">Book Now</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    document.getElementById('nameInput').value = params.get('name') || '';
+    document.getElementById('emailInput').value = params.get('email') || '';
+
+    const timeSlots = [
+      '09:00 AM', '09:30 AM',
+      '10:00 AM', '10:30 AM',
+      '11:00 AM', '11:30 AM',
+      '12:00 PM', '12:30 PM',
+      '01:00 PM', '01:30 PM',
+      '02:00 PM', '02:30 PM',
+      '03:00 PM', '03:30 PM',
+      '04:00 PM', '04:30 PM'
+    ];
+
+    function populateSlots() {
+      const container = document.getElementById("slotList");
+      container.innerHTML = '';
+      timeSlots.forEach(time => {
+        const btn = document.createElement('div');
+        btn.className = 'slot';
+        btn.textContent = time;
+        btn.onclick = () => {
+          document.querySelectorAll('.slot').forEach(el => el.classList.remove('selected'));
+          btn.classList.add('selected');
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function getEndTime(startTime) {
+      const [time, period] = startTime.split(' ');
+      let [hours, minutes] = time.split(':').map(Number);
+      if (period === 'PM' && hours !== 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+
+      const start = new Date();
+      start.setHours(hours, minutes);
+      const end = new Date(start.getTime() + 30 * 60000); // add 30 mins
+      return end.toTimeString().slice(0, 5); // "14:30"
+    }
+
+    function submitBooking() {
+      const name = document.getElementById('nameInput').value.trim();
+      const email = document.getElementById('emailInput').value.trim();
+      const date = document.getElementById('calendar').dataset.selectedDate;
+      const time = document.querySelector('.slot.selected')?.textContent;
+
+      if (!name || !email || !date || !time) {
+        alert('Please fill in all fields and select a time.');
+        return;
+      }
+
+      const endTime = getEndTime(time);
+
+      fetch("https://script.google.com/macros/s/AKfycbxcY4iPzYvUdlWXgAzfg_FEfUouLEGy_4aZbp1A2pwGQZOusfJ-yqjJI-qq9mOOhEyE/exec", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          title: "3echo Strategy Call",
+          date,
+          time,
+          endTime
+        })
+      })
+      .then(res => res.json())
+      .then(res => {
+        if (res.status === "success") {
+          alert("✅ Booking confirmed and added to calendar!");
+        } else {
+          alert("Something went wrong.");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Error submitting booking.");
+      });
+    }
+
+    flatpickr("#calendar", {
+      inline: true,
+      minDate: new Date().fp_incr(1),
+      maxDate: new Date().fp_incr(3),
+      defaultDate: new Date().fp_incr(1),
+      onChange: function(selectedDates, dateStr) {
+        document.getElementById('calendar').dataset.selectedDate = dateStr;
+        populateSlots();
+      }
+    });
+
+    document.getElementById('calendar').dataset.selectedDate = flatpickr.formatDate(new Date().fp_incr(1), "Y-m-d");
+    populateSlots();
+  </script>
+</body>
+</html>
